@@ -159,6 +159,15 @@ void s2e_trace_port_access(
 void s2e_on_page_fault(struct S2E *s2e, struct S2EExecutionState* state, uint64_t addr, int is_write);
 void s2e_on_tlb_miss(struct S2E *s2e, struct S2EExecutionState* state, uint64_t addr, int is_write);
 
+
+/******************************************************/
+/*fromplugiins*/
+ //addbyxqx201301
+void print_process_info();
+void win_monitor_print_process_info();
+
+
+
 /**********************************/
 /* Functions from S2EExecutor.cpp */
 
@@ -355,6 +364,7 @@ void tcg_llvm_trace_memory_access(uint64_t vaddr, uint64_t haddr,
 void tcg_llvm_trace_port_access(uint64_t port, uint64_t value,
                                 unsigned bits, int isWrite);
 //#endif
+
 
 #ifdef __cplusplus
 }

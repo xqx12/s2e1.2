@@ -514,6 +514,7 @@ void monitor_protocol_event(MonitorEvent event, QObject *data)
 #ifdef CONFIG_S2E
     /* Add S2E-specific data to the event */
     s2e_on_monitor_event(qmp);
+
 #endif
 
 
@@ -837,6 +838,19 @@ static void do_info_cpu_stats(Monitor *mon)
 static void do_info_trace(Monitor *mon)
 {
     st_print_trace((FILE *)mon, &monitor_fprintf);
+}
+#endif
+
+
+#ifdef CONFIG_S2E
+static void do_print_process_info(Monitor *mon)
+{
+	
+
+	print_process_info();
+	//print_process_info();
+	//print_stacktrace();
+	monitor_printf(mon,"hmp::print process info\n");
 }
 #endif
 
@@ -2328,6 +2342,16 @@ static mon_cmd_t info_cmds[] = {
         .help       = "show the version of QEMU",
         .mhandler.info = hmp_info_version,
     },
+	//addbyxqx
+#ifdef CONFIG_S2E
+	{
+        .name       = "processinfo",
+        .args_type  = "",
+        .params     = "",
+        .help       = "show the process of guest",
+        .mhandler.info = do_print_process_info,
+    },
+#endif
     {
         .name       = "network",
         .args_type  = "",

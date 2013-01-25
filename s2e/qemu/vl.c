@@ -3903,6 +3903,7 @@ int main(int argc, char **argv, char **envp)
 #ifdef CONFIG_S2E
     s2e_cleanup();
 #endif
+	//s2e_cleanup();
 
 #ifdef CONFIG_LLVM
     tcg_llvm_cleanup();

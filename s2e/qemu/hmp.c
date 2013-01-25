@@ -17,6 +17,26 @@
 #include "qemu-timer.h"
 #include "qmp-commands.h"
 
+//#define CONFIG_S2E
+#ifdef CONFIG_S2E
+#include <s2e/s2e_qemu.h>
+#endif
+
+
+/**add by wh, new command functions**/
+//extern void print_process_info();
+void hmp_print_process_info(Monitor *mon, const QDict *qdict)
+{
+	
+#ifdef CONFIG_S2E
+	print_process_info();
+#endif
+  //print_process_info();
+	//print_stacktrace();
+  monitor_printf(mon,"hmp::print process info\n");
+}
+/***********************************************/
+
 static void hmp_handle_error(Monitor *mon, Error **errp)
 {
     if (error_is_set(errp)) {
@@ -934,3 +954,8 @@ void hmp_migrate(Monitor *mon, const QDict *qdict)
         qemu_mod_timer(status->timer, qemu_get_clock_ms(rt_clock));
     }
 }
+
+
+
+
+

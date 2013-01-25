@@ -5,6 +5,8 @@ HXCOMM DEF(command, args, callback, arg_string, help) is used to construct
 HXCOMM monitor commands
 HXCOMM HXCOMM can be used for comments, discarded from both texi and C
 
+
+
 STEXI
 @table @option
 ETEXI
@@ -22,6 +24,21 @@ STEXI
 @findex help
 Show the help for all commands or just for command @var{cmd}.
 ETEXI
+
+/**add by wh, print process info**/
+	{
+		.name="print_process_info",
+		.args_type  = "",
+		.params     = "",
+		.help       = "Print processes of windows OS",
+		.mhandler.cmd = hmp_print_process_info,
+	},
+STEXI
+@item print_process_info
+@findex print_process_info
+Print process info of windows.
+ETEXI
+
 
     {
         .name       = "commit",

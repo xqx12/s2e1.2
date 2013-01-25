@@ -174,6 +174,10 @@ public:
     void initialize();
 
 
+/**add by wh**/
+public:
+  //void printThreadsOfProcess(S2EExecutionState* state, uint64_t process);
+  void printAllProcess(S2EExecutionState* state);
 
 
     virtual bool getImports(S2EExecutionState *s, const ModuleDescriptor &desc, Imports &I);

@@ -61,4 +61,10 @@ void hmp_block_job_set_speed(Monitor *mon, const QDict *qdict);
 void hmp_block_job_cancel(Monitor *mon, const QDict *qdict);
 void hmp_migrate(Monitor *mon, const QDict *qdict);
 
+/*add by wh*/
+void hmp_print_process_info(Monitor *mon, const QDict *qdict);
+
+
+
+
 #endif

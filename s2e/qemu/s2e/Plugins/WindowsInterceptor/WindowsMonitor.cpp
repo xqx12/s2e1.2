@@ -40,6 +40,8 @@ extern "C" {
 //#include "cpu.h"
 //#include "exec-all.h"
 #include "qemu-common.h"
+#include "QemuWinMonitor.h"
+
 }
 
 #include <s2e/S2E.h>
@@ -862,6 +864,45 @@ bool WindowsMonitor::getThreadDescriptor(S2EExecutionState *state,
     return true;
 }
 
+
+/**add by wh, printAllProcess**/
+void WindowsMonitor::printAllProcess(S2EExecutionState* state)
+{
+    //s2e_debug_print("printAllProcess1: success!!!\n");
+    std::vector<uint64_t> parray;
+    getAllProcesses(state,parray);
+    //int count=parray.size();
+    s2e_debug_print("process number: %d success!!!\n", parray.size());
+    std::cout<<"process number: "<<parray.size()<<" success!!!\n";
+    //getAllThreads(state,parray.at(0),tarray);
+    //int tcount=tarray.size();
+    //s2e_debug_print("thread number: %d success!!!\n", tcount);
+
+    s2e::windows::EPROCESS32_XP paddr;
+    for(int i=0;i<parray.size()-1;i++){
+      if(!state->readMemoryConcrete(parray.at(i),&paddr,sizeof(paddr))){
+	s2e_debug_print("process read fail!!!\n");
+      }
+    
+      //s2e()->getDebugStream()<<"process "<<parray.at(0)<<": "<<paddr.UniqueProcessId<<std::endl;
+      s2e_debug_print("printAllProcess -- process %#x : %d name : %s\n",parray.at(i),paddr.UniqueProcessId,paddr.ImageFileName);
+      std::cout<<"printAllProcess -- process "<<hexval(parray.at(i))<<" : "<<paddr.UniqueProcessId<<" name : "<<paddr.ImageFileName<<"\n";
+      //m_UserModeInterceptor->getModulesofProcess(state,parray.at(i));
+      //printThreadsOfProcess(state,parray.at(i));
+    }
+    
+/*    m_UserModeInterceptor->GetPids(state,m_PidSet);
+    foreach2(it,m_PidSet.begin(),m_PidSet.end()){
+      s2e_debug_print("m_pidset: %#x\n",(*it));
+    }
+    m_PidSet.erase(state->getPid());
+*/  
+    
+    //printThreadsOfProcess(state,parray.at(0));
+
+}
+
+
 ///////////////////////////////////////////////////////////////////////
 
 WindowsMonitorState::WindowsMonitorState()
@@ -883,3 +924,12 @@ PluginState *WindowsMonitorState::factory(Plugin *p, S2EExecutionState *state)
 {
     return new WindowsMonitorState();
 }
+
+
+/**add by wh, win_monitor_print_process_info**/
+/*
+void win_monitor_print_process_info(){
+  //s2e_debug_print("printAllProcess0: success!!!\n");
+  ((WindowsMonitor*)g_s2e->getPlugin("WindowsMonitor"))->printAllProcess(g_s2e_state);
+}
+ */

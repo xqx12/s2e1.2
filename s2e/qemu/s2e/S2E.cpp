@@ -49,6 +49,7 @@ extern CPUX86State *env;
 
 #include <s2e/Plugin.h>
 #include <s2e/Plugins/CorePlugin.h>
+#include <s2e/Plugins/WindowsInterceptor/WindowsMonitor.h>
 #include <s2e/ConfigFile.h>
 #include <s2e/Utils.h>
 #include <s2e/S2EExecutor.h>
@@ -843,7 +844,17 @@ void s2e_execute_cmd(const char *cmd)
 {
     g_s2e->getConfig()->invokeLuaCommand(cmd);
 }
+/**add by wh, win_monitor_print_process_info**/
+void win_monitor_print_process_info(){
+  //s2e_debug_print("printAllProcess0: success!!!\n");
+  ((s2e::plugins::WindowsMonitor*)g_s2e->getPlugin("WindowsMonitor"))->printAllProcess(g_s2e_state);
+}
+//addbyxqx201301
+void print_process_info(){
+	win_monitor_print_process_info();
+}
 }
 
 
+ 
 } // extern "C"
