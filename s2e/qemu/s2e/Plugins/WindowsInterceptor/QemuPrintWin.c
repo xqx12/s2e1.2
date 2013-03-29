@@ -1,9 +1,10 @@
 #include "QemuWinMonitor.h"
 //#include <../../../llvm-3.1/lib/Target/ARM/ARMInstrThumb.td>
-
-void print_process_info(void){
+/*
+void print_process_info(bool win){
   win_monitor_print_process_info();
 }
+*/
 /*
 void print_module_info(void){
   win_monitor_print_module_info();

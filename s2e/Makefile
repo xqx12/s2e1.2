@@ -251,7 +251,7 @@ klee/Debug/bin/klee-config: stamps/klee-make-debug
 klee/Release/bin/klee-config: stamps/klee-make-release
 
 stamps/qemu-configure-debug: stamps/klee-configure klee/Debug/bin/klee-config
-	mkdir -p qemu-debug
+	mkdir -p qemu-debug  && mkdir -p qemu-debug/i386-s2e-softmmu/s2e/Plugins/LinuxInterceptor
 	cd qemu-debug && $(S2ESRC)/qemu/configure \
 		--prefix=$(S2EBUILD)/opt \
 		--with-llvm=$(S2EBUILD)/llvm/Debug+Asserts  \
@@ -267,7 +267,7 @@ stamps/qemu-configure-debug: stamps/klee-configure klee/Debug/bin/klee-config
 	mkdir -p stamps && touch $@
 
 stamps/qemu-configure-release: stamps/klee-configure klee/Release/bin/klee-config
-	mkdir -p qemu-release
+	mkdir -p qemu-release  && mkdir -p qemu-release/i386-s2e-softmmu/s2e/Plugins/LinuxInterceptor
 	cd qemu-release && $(S2ESRC)/qemu/configure \
 		--prefix=$(S2EBUILD)/opt \
 		--with-llvm=$(S2EBUILD)/llvm/Release+Asserts  \

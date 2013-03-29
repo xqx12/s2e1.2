@@ -50,6 +50,7 @@ extern CPUX86State *env;
 #include <s2e/Plugin.h>
 #include <s2e/Plugins/CorePlugin.h>
 #include <s2e/Plugins/WindowsInterceptor/WindowsMonitor.h>
+#include <s2e/Plugins/LinuxInterceptor/Linux_read.h>
 #include <s2e/ConfigFile.h>
 #include <s2e/Utils.h>
 #include <s2e/S2EExecutor.h>
@@ -849,9 +850,25 @@ void win_monitor_print_process_info(){
   //s2e_debug_print("printAllProcess0: success!!!\n");
   ((s2e::plugins::WindowsMonitor*)g_s2e->getPlugin("WindowsMonitor"))->printAllProcess(g_s2e_state);
 }
+//addbyxqx  copy from xjj code
+//extern void print_linux_process_info(void);
+void linux_monitor_print_process_info()
+{
+  //print_linux_process_info();
+  ((s2e::plugins::Linux_read*)g_s2e->getPlugin("Linux_read"))->print_linux_process_info();
+  //(s2e::plugins::Linux_read*)(g_s2e->getPlugin("Linux_read"));
+} 
+
 //addbyxqx201301
-void print_process_info(){
-	win_monitor_print_process_info();
+void print_process_info(bool win=true){
+	if(win) {
+		s2e_debug_print("S2E.cpp:win_monitor_print_process_info");
+		win_monitor_print_process_info();
+	}
+	else {
+		s2e_debug_print("S2E.cpp:linux_monitor_print_process_info");
+		linux_monitor_print_process_info();
+	}
 }
 }
 

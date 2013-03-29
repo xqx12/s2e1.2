@@ -843,14 +843,26 @@ static void do_info_trace(Monitor *mon)
 
 
 #ifdef CONFIG_S2E
-static void do_print_process_info(Monitor *mon)
+static void do_print_win_process_info(Monitor *mon)
 {
 	
 
-	print_process_info();
+	print_process_info(1);
 	//print_process_info();
 	//print_stacktrace();
-	monitor_printf(mon,"hmp::print process info\n");
+	monitor_printf(mon,"hmp::print win process info\n");
+}
+#endif
+
+#ifdef CONFIG_S2E
+static void do_print_linux_process_info(Monitor *mon)
+{
+	
+
+	print_process_info(0);
+	//print_process_info();
+	//print_stacktrace();
+	monitor_printf(mon,"hmp::print linux process info\n");
 }
 #endif
 
@@ -2345,11 +2357,21 @@ static mon_cmd_t info_cmds[] = {
 	//addbyxqx
 #ifdef CONFIG_S2E
 	{
-        .name       = "processinfo",
+        .name       = "win_processinfo",
         .args_type  = "",
         .params     = "",
-        .help       = "show the process of guest",
-        .mhandler.info = do_print_process_info,
+        .help       = "show the process of windows guest",
+        .mhandler.info = do_print_win_process_info,
+    },
+#endif
+	//addbyxqx
+#ifdef CONFIG_S2E
+	{
+        .name       = "linux_processinfo",
+        .args_type  = "",
+        .params     = "",
+        .help       = "show the process of linux guest",
+        .mhandler.info = do_print_linux_process_info,
     },
 #endif
     {

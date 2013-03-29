@@ -470,6 +470,11 @@ s2eobj-y += s2e/Plugins/WindowsInterceptor/WindowsCrashDumpGenerator.o
 s2eobj-y += s2e/Plugins/WindowsInterceptor/UserModeInterceptor.o
 s2eobj-y += s2e/Plugins/WindowsInterceptor/KernelModeInterceptor.o
 s2eobj-y += s2e/Plugins/WindowsInterceptor/WindowsImage.o
+#addbyxqx for linux interceptor
+s2eobj-y += s2e/Plugins/LinuxInterceptor/Linux_read.o
+s2eobj-y += s2e/Plugins/LinuxInterceptor/Linux_pro.o
+s2eobj-y += s2e/Plugins/LinuxInterceptor/cmd_qemu.o
+
 s2eobj-y += s2e/Plugins/WindowsApi/NdisHandlers.o
 s2eobj-y += s2e/Plugins/WindowsApi/NdisHandlersUtils.o
 s2eobj-y += s2e/Plugins/WindowsApi/NdisMemoryCheck.o

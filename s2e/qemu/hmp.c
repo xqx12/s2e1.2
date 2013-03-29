@@ -24,12 +24,13 @@
 
 
 /**add by wh, new command functions**/
+//this way sometimes maybe ok ,i donot know why.
 //extern void print_process_info();
 void hmp_print_process_info(Monitor *mon, const QDict *qdict)
 {
 	
 #ifdef CONFIG_S2E
-	print_process_info();
+	print_process_info(1);
 #endif
   //print_process_info();
 	//print_stacktrace();

@@ -163,9 +163,9 @@ void s2e_on_tlb_miss(struct S2E *s2e, struct S2EExecutionState* state, uint64_t 
 /******************************************************/
 /*fromplugiins*/
  //addbyxqx201301
-void print_process_info();
+void print_process_info(bool win);
 void win_monitor_print_process_info();
-
+void linux_monitor_print_process_info();
 
 
 /**********************************/
