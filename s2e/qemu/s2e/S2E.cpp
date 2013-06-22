@@ -862,11 +862,11 @@ void linux_monitor_print_process_info()
 //addbyxqx201301
 void print_process_info(bool win=true){
 	if(win) {
-		s2e_debug_print("S2E.cpp:win_monitor_print_process_info");
+		//s2e_debug_print("S2E.cpp:linux_monitor_print_process_info");
 		win_monitor_print_process_info();
 	}
 	else {
-		s2e_debug_print("S2E.cpp:linux_monitor_print_process_info");
+		//s2e_debug_print("S2E.cpp:linux_monitor_print_process_info");
 		linux_monitor_print_process_info();
 	}
 }

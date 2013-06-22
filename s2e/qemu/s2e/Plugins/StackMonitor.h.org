@@ -41,8 +41,8 @@
 #include <s2e/Plugins/CorePlugin.h>
 #include <s2e/S2EExecutionState.h>
 #include "ModuleExecutionDetector.h"
+#include "ExecutionStatisticsCollector.h"
 #include "OSMonitor.h"
-
 
 namespace s2e {
 namespace plugins {
@@ -54,6 +54,9 @@ struct StackFrameInfo {
     uint64_t FrameSize;
     uint64_t FramePc;
 };
+
+typedef std::vector<uint64_t> CallStack;
+typedef std::vector<CallStack> CallStacks;
 
 class StackMonitorState;
 
@@ -68,9 +71,24 @@ public:
 
     bool getFrameInfo(S2EExecutionState *state, uint64_t sp, bool &onTheStack, StackFrameInfo &info) const;
     void dump(S2EExecutionState *state);
+
+    bool getCallStacks(S2EExecutionState *state, CallStacks &callStacks) const;
+
+    /**
+     * Emitted when a new stack frame is setup (e.g., when execution
+     * enters a module of interest.
+     */
+    sigc::signal<void, S2EExecutionState*> onStackCreation;
+
+    /**
+     * Emitted when there are no more stack frames anymore.
+     */
+    sigc::signal<void, S2EExecutionState*> onStackDeletion;
+
 private:
     OSMonitor *m_monitor;
     ModuleExecutionDetector *m_detector;
+    ExecutionStatisticsCollector *m_statsCollector;
     bool m_debugMessages;
 
     sigc::connection m_onTranslateRegisterAccessConnection;
@@ -97,9 +115,6 @@ private:
     void onModuleUnload(S2EExecutionState* state, const ModuleDescriptor &module);
     void onModuleTransition(S2EExecutionState* state, const ModuleDescriptor *prev,
                                           const ModuleDescriptor *next);
-    //added by cdboot 20120918
-//    void onCustomInstruction(S2EExecutionState* state, uint64_t opcode);
-    void opGetCurrentStack(S2EExecutionState *state);
 };
 
 

@@ -45,56 +45,138 @@
 namespace s2e {
 namespace plugins {
 
-S2E_DEFINE_PLUGIN(StackChecker, "Verfies the correct stack use", "", "MemoryChecker", "StackMonitor");
+//S2E_DEFINE_PLUGIN(StackChecker, "Verfies the correct stack use", "", "MemoryChecker", "StackMonitor");
+S2E_DEFINE_PLUGIN(StackChecker, "Verfies the correct stack use", "", /*"AssertExpert""VulMining",*/ "StackMonitor");
 
 void StackChecker::initialize()
 {
+//    m_stackMonitor = static_cast<StackMonitor*>(s2e()->getPlugin("StackMonitor"));
+//    m_memoryChecker = static_cast<MemoryChecker*>(s2e()->getPlugin("MemoryChecker"));
+//    m_monitor = static_cast<OSMonitor*>(s2e()->getPlugin("Interceptor"));
+//
+//    m_memoryChecker->onPostCheck.connect(
+//        sigc::mem_fun(*this, &StackChecker::onMemoryAccess));
+    //added by cdboot 20120529
     m_stackMonitor = static_cast<StackMonitor*>(s2e()->getPlugin("StackMonitor"));
-    m_memoryChecker = static_cast<MemoryChecker*>(s2e()->getPlugin("MemoryChecker"));
+//    m_assertExpert = static_cast<AssertExpert*>(s2e()->getPlugin("AssertExpert"));
+    m_vulMining = static_cast<VulMining*>(s2e()->getPlugin("VulMining"));
     m_monitor = static_cast<OSMonitor*>(s2e()->getPlugin("Interceptor"));
 
-    m_memoryChecker->onPostCheck.connect(
+    m_vulMining->onStackCheck.connect(
         sigc::mem_fun(*this, &StackChecker::onMemoryAccess));
 }
 
+//void StackChecker::onMemoryAccess(S2EExecutionState *state, uint64_t address,
+//                                  unsigned size, bool isWrite, bool *result)
+//{
+//    //XXX: This is a hack until we grant param rights for each entry point.
+//    uint64_t stackBase = 0, stackSize = 0;
+////    m_monitor->getCurrentStack(state, &stackBase, &stackSize);
+//    //得到栈空间，这里内核模式和用户模式下的栈空间获取方式不同
+//    //modified by cdboot 20120518 from hhui's code
+//    if(!m_monitor->getCurrentStack(state, &stackBase, &stackSize)){
+//    	m_monitor->H_getCurrentStack(state, &stackBase, &stackSize);
+//    }
+//
+//    //粗略判断当前地址是否在栈空间的范围内
+//    if (address >= stackBase && (address < stackBase + stackSize)) {
+//        *result = true;
+//        return;
+//    }
+//
+//
+//    StackFrameInfo info;
+//    bool onTheStack = false;
+//    //查找是否有当前地址所对应的栈针
+//    bool res = m_stackMonitor->getFrameInfo(state, address, onTheStack, info);
+//
+//    *result = false;
+//
+//    //如果不再栈空间内，返回
+//    if (!onTheStack) {
+//        m_stackMonitor->dump(state);
+//        return;
+//    }
+//
+//    //如果没有找到对应的栈针
+//    //We are not accessing any valid frame
+//    if (!res) {
+//        std::stringstream err;
+//
+//        err << "StackChecker: "
+//                << "BUG: memory range at " << hexval(address) << " of size " << hexval(size)
+//                << " is a stack location but cannot be accessed by instruction " << m_memoryChecker->getPrettyCodeLocation(state)
+//                << ": invalid frame!" << std::endl;
+//
+//        if (m_memoryChecker->terminateOnErrors()) {
+//            s2e()->getExecutor()->terminateStateEarly(*state, err.str());
+//        }
+//    }
+//
+//    *result = true;
+//}
+
+//modified by cdboot 20120604
+//void StackChecker::onMemoryAccess(S2EExecutionState *state, uint64_t address,
+//                                  uint64_t size, uint64_t *maxSize)
 void StackChecker::onMemoryAccess(S2EExecutionState *state, uint64_t address,
-                                  unsigned size, bool isWrite, bool *result)
+                                  uint64_t size, StackFrameInfo *info)
 {
     //XXX: This is a hack until we grant param rights for each entry point.
-    uint64_t stackBase = 0, stackSize = 0;
-    m_monitor->getCurrentStack(state, &stackBase, &stackSize);
-    if (address >= stackBase && (address < stackBase + stackSize)) {
-        *result = true;
-        return;
-    }
+//    uint64_t stackBase = 0, stackSize = 0;
+////    m_monitor->getCurrentStack(state, &stackBase, &stackSize);
+//    //得到栈空间，这里内核模式和用户模式下的栈空间获取方式不同
+//    //modified by cdboot 20120518 from hhui's code
+//    if(!m_monitor->getCurrentStack(state, &stackBase, &stackSize)){
+//    	m_monitor->H_getCurrentStack(state, &stackBase, &stackSize);
+//    }
+//
+//    //粗略判断当前地址是否在栈空间的范围内
+//    if (!(address >= stackBase && (address < stackBase + stackSize))) {
+////        *maxSize = 0x20;
+//    	//modified by cdboot 20120604
+//    	info->StackSize = 0x00000000;
+//        return;
+//    }
 
 
-    StackFrameInfo info;
+//    StackFrameInfo info;
     bool onTheStack = false;
-    bool res = m_stackMonitor->getFrameInfo(state, address, onTheStack, info);
+    //查找是否有当前地址所对应的栈针
+    bool res = m_stackMonitor->getFrameInfo(state, address, onTheStack, *info);
 
-    *result = false;
+//    *maxSize = 0x20;
 
+    //如果不再栈空间内，返回
     if (!onTheStack) {
         m_stackMonitor->dump(state);
+        //modified by cdboot 20120604
+        info->StackSize = 0xffffffff;
         return;
     }
 
+    //如果没有找到对应的栈针
     //We are not accessing any valid frame
     if (!res) {
         std::stringstream err;
 
-        err << "StackChecker: "
-                << "BUG: memory range at " << hexval(address) << " of size " << hexval(size)
-                << " is a stack location but cannot be accessed by instruction " << m_memoryChecker->getPrettyCodeLocation(state)
-                << ": invalid frame!" << std::endl;
-
-        if (m_memoryChecker->terminateOnErrors()) {
-            s2e()->getExecutor()->terminateStateEarly(*state, err.str());
-        }
+//        err << "StackChecker: "
+//                << "BUG: memory range at " << hexval(address) << " of size " << hexval(size)
+//                << " is a stack location but cannot be accessed by instruction " << m_memoryChecker->getPrettyCodeLocation(state)
+//                << ": invalid frame!" << std::endl;
+//
+//        if (m_memoryChecker->terminateOnErrors()) {
+//            s2e()->getExecutor()->terminateStateEarly(*state, err.str());
+//        }
+    }
+    else{
+//    	*maxSize = info.FrameSize;
+    	return;
     }
 
-    *result = true;
+//    *maxSize = 0x20;
+    //modified by cdboot 20120604
+    info->StackSize = 0xffffffff;
 }
 
 } // namespace plugins

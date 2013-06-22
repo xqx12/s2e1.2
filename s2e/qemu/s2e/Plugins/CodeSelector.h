@@ -102,6 +102,11 @@ public:
 
     virtual ~CodeSelector();
     void initialize();
+	
+	int isPidToTrack(S2EExecutionState *state);
+	
+	//added by wzy
+    //friend bool S2EExecutionState::isPidToTrack();
 };
 
 #if 0

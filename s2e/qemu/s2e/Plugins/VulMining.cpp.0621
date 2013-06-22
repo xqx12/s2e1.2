@@ -1,0 +1,217 @@
+/*
+ * S2E Selective Symbolic Execution Framework
+ *
+ * Copyright (c) 2010, Dependable Systems Laboratory, EPFL
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *     * Redistributions of source code must retain the above copyright
+ *       notice, this list of conditions and the following disclaimer.
+ *     * Redistributions in binary form must reproduce the above copyright
+ *       notice, this list of conditions and the following disclaimer in the
+ *       documentation and/or other materials provided with the distribution.
+ *     * Neither the name of the Dependable Systems Laboratory, EPFL nor the
+ *       names of its contributors may be used to endorse or promote products
+ *       derived from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE DEPENDABLE SYSTEMS LABORATORY, EPFL BE LIABLE
+ * FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ *
+ * Currently maintained by:
+ *    wzy <wuzhiyong0127@gmail.com>
+ *
+ * All contributors are listed in S2E-AUTHORS file.
+ *
+ */
+
+/**
+This plugin is used to implement vulnerability mining. It includes three parts:
+1) the start point to make input symbolic, which also can be understood as taint source;
+2) assert part, put some rules here to finding the bugs of interesting points, like vulnerable functions and loops;
+3) termination points where disable forking or terminate;
+ */
+
+extern "C" {
+#include "config.h"
+#include "qemu-common.h"
+#include "disas.h"
+}
+
+
+#include <s2e/S2E.h>
+#include <s2e/Utils.h>
+#include <s2e/ConfigFile.h>
+#include <s2e/Plugins/Opcodes.h>
+#include "VulMining.h"
+
+#include <s2e/S2EExecutionState.h>
+#include <s2e/S2EExecutor.h>
+#include <klee/Solver.h>
+
+#include "../../monitor.h"
+//#include "../../disas.h"
+
+#include <sstream>
+#include <fstream>
+
+using namespace std;
+
+using namespace s2e;
+using namespace s2e::plugins;
+
+#define MAX_FUNCNAME 20
+#define ADDRESS_SIZE 8
+
+S2E_DEFINE_PLUGIN(VulMining, "Plugin for mining vul" , "VulMining" , "CodeSelector" , "ModuleExecutionDetector");
+
+
+
+VulMining::~VulMining()
+{
+
+}
+
+
+void VulMining::initialize()
+{
+
+	m_CodeSelector = (CodeSelector*)s2e()->getPlugin("CodeSelector");
+	m_executionDetector = (ModuleExecutionDetector*)s2e()->getPlugin("ModuleExecutionDetector");
+
+   	m_onTranslateInstruction = s2e()->getCorePlugin()->onTranslateInstructionStart.connect(
+        	sigc::mem_fun(*this, &VulMining::onTranslateInstructionStart));
+
+}
+//
+void VulMining::onTranslateInstructionStart(ExecutionSignal *signal,
+                                                   S2EExecutionState *state,
+                                                   TranslationBlock *tb,
+                                                   uint64_t pc)
+{
+	if (!m_CodeSelector->isPidToTrack(state)) {
+		return;
+	}
+
+    const ModuleDescriptor *currentModule =
+    		m_executionDetector->getCurrentDescriptor(state);
+
+    if (!currentModule) {
+        // Outside of any module, do not need
+        // to instrument tb exits.
+        return;
+    }
+
+	s2e()->getMessagesStream() << "onTranslateInstructionStart pc: " << hexval(pc) << "\n";
+
+	if ((currentModule->Name == "libc-2.11.1.so") && (/*pc == (currentModule->LoadBase + 0x00076e27) ||*/ pc == (currentModule->LoadBase + 0x00076e34))) {
+		s2e()->getMessagesStream() << "hit pc! " << hexval(pc) << "\n";
+		disasPC(pc);
+		signal->connect(sigc::mem_fun(*this, &VulMining::setStrlenSymbolicVar));
+	}
+
+/*
+	if ((currentModule->Name == "libc-2.11.1.so") && (pc == (currentModule->LoadBase + 0x00073881) || pc == (currentModule->LoadBase + 0x00073887))) {
+		s2e()->getMessagesStream() << "hit pc! " << hexval(pc) << "\n";
+		disasPC(pc);
+	}
+*/
+
+}
+
+void VulMining::setStrlenSymbolicVar(S2EExecutionState *state, uint64_t pc) {
+
+	uint64_t sp = 0;
+	uint32_t param1;
+	uint32_t size = 0 , eax = 0;
+
+	//read <<p1 pointer>> and <<p2 pointer>> and <<return length>>
+	sp = state->getSp();
+	state->readMemoryConcrete(sp, &param1, sizeof(uint32_t));
+	state->readCpuRegisterConcrete(offsetof(CPUX86State, regs[R_EAX]), &eax, sizeof(uint32_t));
+
+	size = eax;
+
+	//prepare to symbolize the buffer
+	s2e()->getMessagesStream() << "setSymbolicVar pc " << hexval(pc) << "\n"
+													  << "---------sp     : " << hexval(sp) << "\n"
+													  << "-addr--param1 : " << hexval(param1) << "\n"
+													  << "---------length : " << hexval(size) << "\n";
+	state->setPc(pc);
+	state->jumpToSymbolicCpp();
+
+	klee::ref<klee::Expr> symb = state->createSymbolicValue("strlen_val" , 8*sizeof(uint32_t));
+	state->writeCpuRegisterSymbolic(offsetof(CPUX86State, regs[R_EAX]) , symb);
+	s2e()->getMessagesStream() << "inserting strlen retval symb: " << symb << "\n";
+
+	//concretize param1 and param2
+/*
+    for(unsigned i = 0; i < 1; ++i) {
+        uint8_t b1 = 0;
+        if (!state->readMemoryConcrete8(param1 + i, &b1, S2EExecutionState::VirtualAddress)) {
+            s2e()->getWarningsStream(state)
+                << "Can not concretize memory"
+                << " at " << hexval(param1 + i) << '\n';
+        } else {
+            //readMemoryConcrete8 does not automatically overwrite the destination
+            //address if we choose not to add the constraint, so we do it here
+                if (!state->writeMemoryConcrete(param1 + i, &b1, sizeof(b1))) {
+                    s2e()->getWarningsStream(state)
+                        << "Can not write memory"
+                        << " at " << hexval(param1 + i) << '\n';
+                }
+        }
+
+       //added by cdboot 20130507
+        s2e()->getWarningsStream(state)
+                       << hexval(b1) << '\n';
+     }
+*/
+	state->enableForking();
+
+}
+
+void VulMining::disasPC(uint64_t pc)
+{
+	char *buf;
+	long lSize;
+	long result;
+
+	FILE *m_logFile;
+	m_logFile = fopen("/home/cdboot/disas.txt", "w+");
+	target_disas(m_logFile, pc, 1, 0);
+	fclose(m_logFile);
+
+
+	m_logFile = fopen("/home/cdboot/disas.txt", "r");
+
+	fseek (m_logFile , 0 , SEEK_END);
+	lSize = ftell (m_logFile);
+	rewind (m_logFile);
+
+
+	buf = (char*) malloc (sizeof(char)*lSize);
+	memset( buf, 0, sizeof(char)*lSize);
+    if (buf == NULL)
+    	{fputs ("Memory error",stderr); exit (2);}
+
+	result = fread (buf,1,lSize,m_logFile);
+	if (result != lSize)
+		{fputs ("Reading error",stderr); exit (3);}
+
+
+	fclose(m_logFile);
+
+	s2e()->getDebugStream() <<"buf: "<<buf<<"\n";
+
+	free(buf);
+
+}

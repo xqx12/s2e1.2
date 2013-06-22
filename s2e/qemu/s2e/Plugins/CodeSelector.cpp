@@ -308,6 +308,25 @@ void CodeSelector::onCustomInstruction(
 }
 
 
+//added by wzy
+int CodeSelector::isPidToTrack(S2EExecutionState *state)
+{
+
+    uint32_t result = 0;
+
+    //test pid
+    Pids::iterator it =  m_pidsToTrack.find(state->getPid());
+    if (it != m_pidsToTrack.end())
+    {
+//        g_s2e->getWarningsStream() << "Attenation, ID is selected successfully!" << "\n";
+        result = 1;
+    }
+
+    return result;
+    //state->writeCpuRegisterConcrete(CPU_OFFSET(regs[R_EBP]), &result, 4);
+
+}
+
 #if 0
 
 CodeSelector::CodeSelector(S2E *s2e) : Plugin(s2e) {

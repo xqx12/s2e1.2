@@ -53,7 +53,6 @@ namespace plugins {
 S2E_DEFINE_PLUGIN(StackMonitor, "Tracks stack usage by modules", "StackMonitor",
                   "ModuleExecutionDetector", "Interceptor");
 
-//namespace {
 class StackMonitorState : public PluginState
 {
 public:
@@ -113,12 +112,12 @@ public:
 
 
     class Stack {
-    public:
         uint64_t m_stackBase;
         uint64_t m_stackSize;
 
         //XXX: remove it?
         uint64_t m_lastStackPointer;
+
         StackFrames m_frames;
 
     public:
@@ -140,7 +139,6 @@ public:
 
             sf.top = m_lastStackPointer;
             sf.size = 4; //XXX: Fix constant
-            //sf.size = 0;
             sf.pc = pc;
 
             m_frames.push_back(sf);
@@ -157,79 +155,27 @@ public:
         /** Used for call instructions */
         void newFrame(S2EExecutionState *state, unsigned currentModuleId, uint64_t pc, uint64_t stackPointer) {
             const StackFrame &last = m_frames.back();
-//            g_s2e->getMessagesStream() << "StackMonitor::newFrame pc = " << hexval(pc) << "\n";
-            if(stackPointer >= last.top - last.size + 4) {
-            	g_s2e->getMessagesStream() << "stop! "<< "\n";
-            }
-            assert(stackPointer < last.top - last.size + 4);
-
-            //added by cdboot 20120524
-//            g_s2e->getDebugStream() << "StackMonitor::newFrame state->getPc() = " << hexval(state->getPc()) << "\n"
-//            						   << "-----------------------------------pc = " << hexval(pc) << "\n"
-//            						   << "-------------------------stackPointer = " << hexval(stackPointer) << "\n";
-            int i = 0;
-            foreach2(it, m_frames.begin(), m_frames.end()) {
-                const StackFrame &frame= *it;
-                g_s2e->getDebugStream() << "before insert new frame: m_frames[" << i << "].top = " << hexval(frame.top) << "\n"
-                						   << "-------------------------m_frames[" << i << "].size = " << hexval(frame.size) << "\n"
-                						   << "-------------------------m_frames[" << i << "].pc = " << hexval(frame.pc) << "\n";
-                i++;
-            }
-
-            //added by cdboot 20120718
-//            if(stackPointer > last.top - last.size)
-//            {
-//            	last.size = last.top - stackPointer;
-//            }
+            assert(stackPointer < last.top + last.size);
 
             StackFrame frame;
             frame.pc = pc;
             frame.moduleId = currentModuleId;
             frame.top = stackPointer;
             frame.size = 4;
-            //frame.size = 0;
             m_frames.push_back(frame);
 
             m_lastStackPointer = stackPointer;
-
-            int j = 0;
-            foreach2(it, m_frames.begin(), m_frames.end()) {
-                const StackFrame &frame= *it;
-                g_s2e->getDebugStream() << "after insert new frame: m_frames[" << j << "].top = " << hexval(frame.top) << "\n"
-                						   << "-------------------------m_frames[" << j << "].size = " << hexval(frame.size) << "\n"
-                						   << "-------------------------m_frames[" << j << "].pc = " << hexval(frame.pc) << "\n";
-                j++;
-            }
         }
 
         void update(S2EExecutionState *state, unsigned currentModuleId, uint64_t stackPointer) {
             assert(!m_frames.empty());
-            if(!(stackPointer >= m_stackBase && stackPointer < (m_stackBase + m_stackSize))){
-            	g_s2e->getMessagesStream() << "StackMonitor cdboot say :stop!" << "\n";
-            }
             assert(stackPointer >= m_stackBase && stackPointer < (m_stackBase + m_stackSize));
             StackFrame &last = m_frames.back();
-
-            //added by cdboot 20120521
-            g_s2e->getDebugStream() << "StackMonitor::stack update state->getPc() = " << hexval(state->getPc()) << "\n"
-            						   << "-----------------------------stackPointer = " << hexval(stackPointer) << "\n";
-//            						   << "---------------------------------last.top = " << hexval(last.top) << "\n"
-//            						   << "--------------------------------last.size = " << hexval(last.size) << "\n"
-//            						   << "--------------------------m_frames.size() = " << hexval(m_frames.size()) << "\n";
-
-            int i = 0;
-            foreach2(it, m_frames.begin(), m_frames.end()) {
-                const StackFrame &frame= *it;
-                g_s2e->getDebugStream() << "before stack update: m_frames[" << i << "].top = " << hexval(frame.top) << "\n"
-                						   << "---------------------m_frames[" << i << "].size = " << hexval(frame.size) << "\n"
-                						   << "---------------------m_frames[" << i << "].pc = " << hexval(frame.pc) << "\n";
-                i++;
-            }
 
             //The current stack pointer is above the bottom of the stack
             //We need to unwind the frames
             do {
-                if (last.top >= stackPointer) {//cdboot ask: why not change the last.top?
+                if (last.top >= stackPointer) {
                     last.size = last.top - stackPointer + 4;
                 } else {
                     m_frames.pop_back();
@@ -241,34 +187,6 @@ public:
 
                 last = m_frames.back();
             } while (stackPointer > last.top);
-//            do {
-//                if (last.top - last.size >= stackPointer) {//cdboot ask: why not change the last.top?
-//                    last.size = last.top - stackPointer;
-//                } else {
-//                    m_frames.pop_back();
-//                }
-//
-//                if (m_frames.empty()) {
-//                    break;
-//                }
-//
-//                last = m_frames.back();
-//            } while (stackPointer > last.top - last.size);
-
-            StackFrame &last2 = m_frames.back();
-            if(stackPointer > (last2.top - last2.size + 4)){
-            	last2.size = last2.top - stackPointer + 4;
-            }
-
-            //added by cdboot 20120521
-            int j = 0;
-            foreach2(it, m_frames.begin(), m_frames.end()) {
-                const StackFrame &frame= *it;
-                g_s2e->getDebugStream() << "after stack update: m_frames[" << j << "].top = " << hexval(frame.top) << "\n"
-                						   << "--------------------m_frames[" << j << "].size = " << hexval(frame.size) << "\n"
-                						   << "--------------------m_frames[" << j << "].pc = " << hexval(frame.pc) << "\n";
-                j++;
-            }
 
             // The stack may become empty when the last frame is popped,
             // e.g., when the top-level function returns.
@@ -325,6 +243,12 @@ public:
             return true;
         }
 
+        void getCallStack(CallStack &cs) const {
+            foreach2(it, m_frames.begin(), m_frames.end()) {
+                cs.push_back((*it).pc);
+            }
+        }
+
         friend llvm::raw_ostream& operator<<(llvm::raw_ostream &os, const Stack &stack);
     };
 
@@ -338,8 +262,7 @@ private:
     uint64_t m_cachedStackSize;
     OSMonitor *m_monitor;
     ModuleExecutionDetector *m_detector;
-    uint64_t m_isFirstTimePid;
-
+    StackMonitor *m_stackMonitor;
     Stacks m_stacks;
     ModuleCache m_moduleCache;
 
@@ -351,10 +274,9 @@ public:
     void deleteStack(S2EExecutionState *state, uint64_t stackBase);
 
     bool getFrameInfo(S2EExecutionState *state, uint64_t sp, bool &onTheStack, StackFrameInfo &info) const;
-    void dump(S2EExecutionState *state) const;
+    bool getCallStacks(S2EExecutionState *state, CallStacks &callStacks) const;
 
-    //added by cdboot 20120918 for linux stack
-//    void opGetCurrentStack(S2EExecutionState *state);
+    void dump(S2EExecutionState *state) const;
 public:
     StackMonitorState(bool debugMessages);
     virtual ~StackMonitorState();
@@ -380,12 +302,12 @@ llvm::raw_ostream& operator<<(llvm::raw_ostream &os, const StackMonitorState::St
     return os;
 }
 
-//}
 
 void StackMonitor::initialize()
 {
     m_detector = static_cast<ModuleExecutionDetector*>(s2e()->getPlugin("ModuleExecutionDetector"));
     m_monitor = static_cast<OSMonitor*>(s2e()->getPlugin("Interceptor"));
+    m_statsCollector = static_cast<ExecutionStatisticsCollector*>(s2e()->getPlugin("ExecutionStatisticsCollector"));
 
     m_debugMessages = s2e()->getConfig()->getBool(getConfigKey() + ".debugMessages");
 
@@ -409,10 +331,6 @@ void StackMonitor::initialize()
 
     m_detector->onModuleTransition.connect(
                 sigc::mem_fun(*this, &StackMonitor::onModuleTransition));
-
-    //added by cdboot 20120918
-//    s2e()->getCorePlugin()->onCustomInstruction.connect(
-//            sigc::mem_fun(*this, &StackMonitor::onCustomInstruction));
 }
 
 void StackMonitor::onModuleTranslateBlockStart(ExecutionSignal *signal,
@@ -420,10 +338,6 @@ void StackMonitor::onModuleTranslateBlockStart(ExecutionSignal *signal,
         TranslationBlock *tb, uint64_t pc)
 {
     m_onTranslateRegisterAccessConnection.disconnect();
-
-//    s2e()->getMessagesStream() << "StackMonitor::onModuleTranslateBlockStart at: " << hexval(pc) << "\n"
-//    		                   << "-----------------------------------------pid: " << hexval(desc.Pid) << "\n"
-//    						   << "-----------------------------state->getPid(): " << hexval(state->getPid()) << "\n" ;
 
     m_onTranslateRegisterAccessConnection =
             s2e()->getCorePlugin()->onTranslateRegisterAccessEnd.connect(
@@ -442,33 +356,20 @@ void StackMonitor::onTranslateRegisterAccess(
              ExecutionSignal *signal, S2EExecutionState* state, TranslationBlock* tb,
              uint64_t pc, uint64_t rmask, uint64_t wmask, bool accessesMemory)
 {
-#ifdef TARGET_ARM
-    const int SP_REG = 13;
-#elif defined(TARGET_I386)
-    const int SP_REG = R_ESP;
-#else
-#error Unsupported architecture
-#endif
-
-    if ((wmask & (1 << SP_REG))) {
+    if ((wmask & (1 << R_ESP))) {
         bool isCall = false;
         if (tb->s2e_tb_type == TB_CALL || tb->s2e_tb_type == TB_CALL_IND) {
             isCall = true;
         }
 
-        s2e()->getDebugStream() << "StackMonitor: onTranslateRegisterAccess at " << hexval(pc) << "\n"
-        		                << "---------------------------state->getPid() " << hexval(state->getPid()) << "\n";
         signal->connect(sigc::bind(sigc::mem_fun(*this, &StackMonitor::onStackPointerModification), isCall));
     }
 }
 
 void StackMonitor::onStackPointerModification(S2EExecutionState *state, uint64_t pc, bool isCall)
 {
-    s2e()->getDebugStream() << "StackMonitor: ESP modif at " << hexval(pc) << "\n";
+    //s2e()->getDebugStream() << "StackMonitor: ESP modif at " << hexval(pc) << "\n";
     DECLARE_PLUGINSTATE(StackMonitorState, state);
-    //added by cdboot 20120521
-//    s2e()->getMessagesStream() << "StackMonitor::onStackPointerModification state->getPc() = " << hexval(state->getPc()) << "\n"
-//    						   << "-----------------------------------------------------pc = " << hexval(pc) << "\n";
     plgState->update(state, pc, isCall);
 }
 
@@ -490,9 +391,7 @@ void StackMonitor::onThreadExit(S2EExecutionState *state, const ThreadDescriptor
 
 void StackMonitor::onModuleLoad(S2EExecutionState* state, const ModuleDescriptor &module)
 {
-	s2e()->getMessagesStream() << "StackMonitor::onModuleLoad module.name: " << module.Name.c_str() << "\n";
-
-	if (!m_detector->getModuleId(module)) {
+    if (!m_detector->getModuleId(module)) {
         return;
     }
 
@@ -515,7 +414,6 @@ void StackMonitor::onModuleTransition(S2EExecutionState* state, const ModuleDesc
     }
 
     DECLARE_PLUGINSTATE(StackMonitorState, state);
-
     plgState->update(state, state->getPc(), false);
 }
 
@@ -532,43 +430,12 @@ void StackMonitor::dump(S2EExecutionState *state)
     plgState->dump(state);
 }
 
-//*******************************************************************************//
-//*******************************************************************************//
-//*******************************************************************************//
-//added by cdboot 20120918
-//void StackMonitor::onCustomInstruction(S2EExecutionState* state, uint64_t opcode)
-//{
-//    if (!OPCODE_CHECK(opcode, STACK_MONITOR_OPCODE)) {
-//        return;
-//    }
-//
-//    opcode >>= 16;
-//    uint8_t op = opcode & 0xFF;
-//    opcode >>= 8;
-//
-//    switch(op) {
-//    case 0: {
-//        //Module load
-//        //eax = pointer to module name
-//        //ebx = runtime load base
-//        //ecx = entry point
-//        opGetCurrentStack(state);
-//        break;
-//    }
-//
-//    default:
-//        s2e()->getWarningsStream() << "Invalid StackMonitor opcode 0x" << std::hex << opcode << std::dec << "\n";
-//        break;
-//    }
-//}
+bool StackMonitor::getCallStacks(S2EExecutionState *state, CallStacks &callStacks) const
+{
+    DECLARE_PLUGINSTATE(StackMonitorState, state);
+    return plgState->getCallStacks(state, callStacks);
+}
 
-//added by cdboot 20120918
-//void StackMonitor::opGetCurrentStack(S2EExecutionState *state){
-//
-//    DECLARE_PLUGINSTATE(StackMonitorState, state);
-//    plgState->opGetCurrentStack(state);
-//
-//}
 /*****************************************************************************/
 /*****************************************************************************/
 /*****************************************************************************/
@@ -579,9 +446,9 @@ StackMonitorState::StackMonitorState(bool debugMessages)
     m_cachedStackSize = 0;
     m_pid = 0;
     m_debugMessages = debugMessages;
-    m_isFirstTimePid = 0;
     m_monitor = static_cast<OSMonitor*>(g_s2e->getPlugin("Interceptor"));
     m_detector = static_cast<ModuleExecutionDetector*>(g_s2e->getPlugin("ModuleExecutionDetector"));
+    m_stackMonitor = static_cast<StackMonitor*>(g_s2e->getPlugin("StackMonitor"));
 }
 
 StackMonitorState::~StackMonitorState()
@@ -606,59 +473,31 @@ void StackMonitorState::update(S2EExecutionState *state, uint64_t pc, bool isCal
     uint64_t sp = state->getSp();
     uint64_t pid = m_monitor->getPid(state, pc);
 
-    g_s2e->getDebugStream() << "StackMonitor update at pc: " << hexval(pc) << "\n"
-    		                << "----------------------pid: " << hexval(pid) << "\n";
-
-    //added by cdboot 20120718
-    const ModuleDescriptor *module = m_detector->getModule(state, pc);
-
-    assert(module && "BUG: unknown module");
-
-    //added by cdboot 20120521
-//    g_s2e->getMessagesStream() << "StackMonitor::update state->getPc() = " << hexval(state->getPc()) << "\n"
-//    						   << "---------------------------------pc = " << hexval(pc) << "\n"
-//    						   << "---------------------------------sp = " << hexval(sp) << "\n"
-//    						   << "------------------m_cachedStackBase = " << hexval(m_cachedStackBase) << "\n"
-//    						   << "------------------m_cachedStackSize = " << hexval(m_cachedStackSize) << "\n";
-
-    //modified by cdboot 20120918
-    //如果进程号不同，或者sp不在当前的stack中。即不同进程，或者不在上次获取的stack范围内
-//    if ((pid != m_pid) || !(sp >= m_cachedStackBase && sp < (m_cachedStackBase + m_cachedStackSize))) {
-//        m_pid = pid;
-//        //待改：调用hhui的H_getCurrentStack得到用户空间的stack
-//        if(!m_monitor->getCurrentStack(state, &m_cachedStackBase, &m_cachedStackSize)){
-//        	m_monitor->H_getCurrentStack(state, &m_cachedStackBase, &m_cachedStackSize);
-//        }
-//    }
-
-    //added by cdboot 20120922 for linux stack
     if ((pid != m_pid) || !(sp >= m_cachedStackBase && sp < (m_cachedStackBase + m_cachedStackSize))) {
-		m_pid = pid;
-		m_cachedStackBase = module->StackBase;
-		m_cachedStackSize = module->StackSize;
-	}
-
+        m_pid = pid;
+        if (!m_monitor->getCurrentStack(state, &m_cachedStackBase, &m_cachedStackSize)) {
+            g_s2e->getWarningsStream() << "StackMonitor: could not get current stack\n";
+            return;
+        }
+    }
 
     PidStackBase p = std::make_pair(pid, m_cachedStackBase);
 
-    //加入到m_stacks向量中
     Stacks::iterator stackit = m_stacks.find(p);
     if (stackit == m_stacks.end()) {
         Stack stack(state, this, pc, m_cachedStackBase, m_cachedStackSize);
         m_stacks.insert(std::make_pair(p, stack));
         stackit = m_stacks.find(p);
+        m_stackMonitor->onStackCreation.emit(state);
     }
 
-
-//    const ModuleDescriptor *module = m_detector->getModule(state, pc);
-//    assert(module && "BUG: unknown module");
-
+    const ModuleDescriptor *module = m_detector->getModule(state, pc);
+    assert(module && "BUG: unknown module");
 
     unsigned moduleId = m_moduleCache.getId(*module);
 
     Stack &stack = (*stackit).second;
 
-    //更新stack中的各个frame
     if (isCall) {
         stack.newFrame(state, moduleId, pc, sp);
     } else {
@@ -671,6 +510,10 @@ void StackMonitorState::update(S2EExecutionState *state, uint64_t pc, bool isCal
 
     if (stack.empty()) {
         m_stacks.erase(stackit);
+        m_stackMonitor->onStackDeletion.emit(state);
+        if (m_stackMonitor->m_statsCollector) {
+            m_stackMonitor->m_statsCollector->incrementEmptyCallStacksCount(state);
+        }
     }
 }
 
@@ -723,7 +566,6 @@ bool StackMonitorState::getFrameInfo(S2EExecutionState *state, uint64_t sp, bool
     onTheStack = false;
 
     //XXX: Assume here that there are very few stacks, so simple iteration is fast enough
-    //轮询stack集合，查找pid符合的stack
     foreach2(it, m_stacks.begin(), m_stacks.end()) {
         if ((*it).first.first != pid) {
             continue;
@@ -732,12 +574,10 @@ bool StackMonitorState::getFrameInfo(S2EExecutionState *state, uint64_t sp, bool
         const Stack &stack = (*it).second;
         StackFrame frameInfo;
         bool frameValid = false;
-        //轮询stack中所有的栈针frame，查找sp所在的frame。
         if (!stack.getFrame(sp, frameValid, frameInfo)) {
             continue;
         }
 
-        //找到
         onTheStack = true;
 
         if (frameValid) {
@@ -763,30 +603,17 @@ void StackMonitorState::dump(S2EExecutionState *state) const
     }
 }
 
-//added by cdboot 20120918 for linux stack
-//void StackMonitorState::opGetCurrentStack(S2EExecutionState *state){
-//
-//	bool ok = true;
-//	uint32_t base = 0 , size = 0;
-//
-//    ok &= state->readCpuRegisterConcrete(CPU_OFFSET(regs[R_EAX]),
-//                                         &base, 4);
-//    ok &= state->readCpuRegisterConcrete(CPU_OFFSET(regs[R_EDX]),
-//                                         &size, 4);
-//    if(!ok) {
-//        g_s2e->getWarningsStream(state)
-//            << "ERROR: symbolic argument was passed to s2e_op "
-//               "stackmonitor getcurrentstack" << "\n";
-//        return;
-//    }
-//
-//    state->readMemoryConcrete(base , &m_cachedStackBase , 4);
-//    state->readMemoryConcrete(size , &m_cachedStackSize , 4);
-//
-//}
+bool StackMonitorState::getCallStacks(S2EExecutionState *state, CallStacks &callStacks) const
+{
+    foreach2(it, m_stacks.begin(), m_stacks.end()) {
+        callStacks.push_back(CallStack());
+        CallStack &cs = callStacks.back();
 
-//*******************************************************************************//
-//*******************************************************************************//
-//*******************************************************************************//
+        const Stack &stack = (*it).second;
+        stack.getCallStack(cs);
+    }
+    return true;
+}
+
 } // namespace plugins
 } // namespace s2e

@@ -3741,3 +3741,11 @@ Expr::Width Executor::getWidthForLLVMType(llvm::Type *type) const {
   return kmodule->targetData->getTypeSizeInBits(type);
 }
 
+//added by cdboot 20130314 for linux stack
+void Executor::addConstraint_pub(ExecutionState &state, ref<Expr> condition) {
+   addConstraint(state , condition);
+}
+
+
+
+

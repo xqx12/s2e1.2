@@ -1,0 +1,13 @@
+#!/bin/bash
+#$1 is the ethernet(usually tapX)
+MYBR="emu0"
+MYBR_IP="192.68.4.28"
+echo "Executing /etc/qemu-ifup"
+echo "Bringing up $1 for bridged mode..."
+sudo /sbin/ifconfig $1 0.0.0.0 promisc up
+echo "Adding $1 to $MYBR..."
+sudo /usr/sbin/brctl addif $MYBR eth0
+sudo /usr/sbin/brctl addif $MYBR $1
+ifconfig eth0 0.0.0.0
+ifconfig $1 0.0.0.0
+sleep 1 

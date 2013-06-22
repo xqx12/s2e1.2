@@ -132,6 +132,11 @@ struct ModuleDescriptor
 
   //The entry point of the module
   uint64_t EntryPoint;
+  
+  //added by cdboot 20130620 for linux stack
+  uint64_t StackBase;
+  uint64_t StackSize;
+
 
   //A list of sections
   ModuleSections Sections;
@@ -142,6 +147,8 @@ struct ModuleDescriptor
     LoadBase = 0;
     Size = 0;
     EntryPoint = 0;
+	StackBase = 0;
+	StackSize = 0;
   }
 
   bool Contains(uint64_t RunTimeAddress) const {

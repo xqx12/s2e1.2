@@ -527,6 +527,10 @@ public:
   void initializeSolver();
 
    Expr::Width getWidthForLLVMType(llvm::Type *type) const;
+   
+   //added by cdboot 20130314 for linux stack
+   void addConstraint_pub(ExecutionState &state , ref<Expr> condition);
+
 };
 
 } // End klee namespace

@@ -34,46 +34,67 @@
  *
  */
 
-#ifndef S2E_PLUGINS_STACKCHECKER_H
-#define S2E_PLUGINS_STACKCHECKER_H
+#ifndef _VulMining_PLUGIN_H_
+
+#define _VulMining_PLUGIN_H_
+
+#include <s2e/Plugins/ModuleDescriptor.h>
 
 #include <s2e/Plugin.h>
 #include <s2e/Plugins/CorePlugin.h>
-#include <s2e/S2EExecutionState.h>
+#include <s2e/Plugins/OSMonitor.h>//这里包含了OSMonitor
+#include "CodeSelector.h"
 #include "StackMonitor.h"
-#include "MemoryChecker.h"
-#include "OSMonitor.h"
-//added by cdboot 20120529
-//#include "AssertExpert.h"
-#include "VulMining.h"
+#include "ModuleExecutionDetector.h"
 
+#include <vector>
+#include <fstream>
+using namespace std;
+
+//为了调用monitor.c中的函数，这里需要在c++的头函数中重新重新声明
 namespace s2e {
 namespace plugins {
 
-class StackChecker : public Plugin
+class VulMining:public Plugin //这里是需要修改的一个地方
 {
     S2E_PLUGIN
-public:
-    StackChecker(S2E* s2e): Plugin(s2e) {}
 
-    void initialize();
+public:
 
 
 private:
-    StackMonitor *m_stackMonitor;
-//    MemoryChecker *m_memoryChecker;
-    OSMonitor *m_monitor;
-//    AssertExpert *m_assertExpert;
-    VulMining *m_vulMining;
 
-//    void onMemoryAccess(S2EExecutionState *state, uint64_t address,
-//                        unsigned size, bool isWrite, bool *result);
-    //added by cdboot 20120529
-    void onMemoryAccess(S2EExecutionState *state, uint64_t address,
-                        uint64_t size, StackFrameInfo *maxSize);
+    sigc::connection m_onTranslateInstruction;
+    CodeSelector *m_CodeSelector;
+    ModuleExecutionDetector *m_executionDetector;
+
+public:
+    VulMining(S2E* s2e): Plugin(s2e) {}//这里是需要修改的一个地方
+    virtual ~VulMining();
+    void initialize();
+
+    void onTranslateInstructionStart(ExecutionSignal *signal,
+                                     S2EExecutionState *state,
+                                     TranslationBlock *tb,
+                                     uint64_t pc);
+
+    void setStrlenSymbolicVar(S2EExecutionState *state, uint64_t pc);
+    void disasPC(uint64_t pc);
+
+    //added by cdboot 20130620
+    sigc::signal<void,
+            S2EExecutionState *,
+            uint64_t /* virtual address */,
+            uint64_t /* size */,
+            StackFrameInfo * /* maxsize */>
+            onStackCheck;
+
 };
+
+
 
 } // namespace plugins
 } // namespace s2e
 
-#endif // S2E_PLUGINS_STACKCHECKER_H
+
+#endif

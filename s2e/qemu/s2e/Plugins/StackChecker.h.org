@@ -43,9 +43,6 @@
 #include "StackMonitor.h"
 #include "MemoryChecker.h"
 #include "OSMonitor.h"
-//added by cdboot 20120529
-//#include "AssertExpert.h"
-#include "VulMining.h"
 
 namespace s2e {
 namespace plugins {
@@ -61,16 +58,11 @@ public:
 
 private:
     StackMonitor *m_stackMonitor;
-//    MemoryChecker *m_memoryChecker;
+    MemoryChecker *m_memoryChecker;
     OSMonitor *m_monitor;
-//    AssertExpert *m_assertExpert;
-    VulMining *m_vulMining;
 
-//    void onMemoryAccess(S2EExecutionState *state, uint64_t address,
-//                        unsigned size, bool isWrite, bool *result);
-    //added by cdboot 20120529
     void onMemoryAccess(S2EExecutionState *state, uint64_t address,
-                        uint64_t size, StackFrameInfo *maxSize);
+                        unsigned size, bool isWrite, bool *result);
 };
 
 } // namespace plugins

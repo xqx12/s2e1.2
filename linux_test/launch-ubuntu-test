@@ -1,0 +1,13 @@
+#!/bin/sh
+
+
+#S2E=/home/xqx/xqx/git/mygithub/s2e1.2/build/qemu-release/i386-softmmu/qemu-system-i386
+S2E=/home/xqx/xqx/git/mygithub/s2e1.2/build/qemu-debug/i386-s2e-softmmu/qemu-system-i386
+
+
+gdb --args $S2E  -rtc clock=vm -net user -net nic,model=ne2k_pci -net tap,script=./qemu-ifup -monitor telnet:localhost:4444,server,nowait  \
+ /home/xqx/projects/s2e/s2e-cd/forxqx/ubuntu.qcow2 -s -m 128     \
+-s2e-config-file $1    \
+
+
+
