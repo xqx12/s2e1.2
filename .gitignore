@@ -12,6 +12,7 @@
 *.la
 *.a
 s2e-*
+cscope.*
 
 # some backup file with ~
 *~

@@ -30,7 +30,7 @@ void hmp_print_process_info(Monitor *mon, const QDict *qdict)
 {
 	
 #ifdef CONFIG_S2E
-	print_process_info(1);
+	//print_process_info(1);
 #endif
   //print_process_info();
 	//print_stacktrace();

@@ -288,12 +288,16 @@ protected:
               const std::vector< ref<Expr> > &conditions,
               std::vector<ExecutionState*> &result);
 
+//addfor MemoryManager Plugin byxqx 201307
+public:
   /// Add the given (boolean) condition as a constraint on state. This
   /// function is a wrapper around the state's addConstraint function
   /// which also manages manages propogation of implied values,
   /// validity checks, and seed patching.
   void addConstraint(ExecutionState &state, ref<Expr> condition);
 
+//addfor MemoryManager Plugin byxqx 201307
+protected:
   // Called on [for now] concrete reads, replaces constant with a symbolic
   // Used for testing.
   ref<Expr> replaceReadWithSymbolic(ExecutionState &state, ref<Expr> e);

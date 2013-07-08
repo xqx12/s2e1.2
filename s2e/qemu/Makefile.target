@@ -476,6 +476,7 @@ s2eobj-y += s2e/Plugins/LinuxInterceptor/Linux_pro.o
 s2eobj-y += s2e/Plugins/LinuxInterceptor/cmd_qemu.o
 #addbyxqx for stack overflow check , copy from cdboot
 s2eobj-y += s2e/Plugins/VulMining.o
+s2eobj-y += s2e/Plugins/MemoryManager.o
 
 s2eobj-y += s2e/Plugins/WindowsApi/NdisHandlers.o
 s2eobj-y += s2e/Plugins/WindowsApi/NdisHandlersUtils.o
