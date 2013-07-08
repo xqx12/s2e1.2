@@ -303,6 +303,11 @@ void CodeSelector::onCustomInstruction(
                 throw CpuExitException();
             }
         }
+		case 3: {
+			isPidToTrack(state);
+        }
+        break;
+
         break;
     }
 }

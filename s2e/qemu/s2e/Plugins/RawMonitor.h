@@ -70,6 +70,9 @@ public:
         uint64_t loadBase;
         uint64_t entryPoint;
         uint64_t size;
+		//added by cdboot 20130620 for linux stack
+        uint64_t stackbase;
+        uint64_t stacksize;
         uint32_t kernelMode;
     } __attribute__((packed));
 

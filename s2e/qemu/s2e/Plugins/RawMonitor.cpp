@@ -223,6 +223,10 @@ void RawMonitor::opLoadModule(S2EExecutionState *state)
     moduleDescriptor.LoadBase = moduleConfig.loadBase;
     moduleDescriptor.EntryPoint = moduleConfig.entryPoint;
     moduleDescriptor.Size = moduleConfig.size;
+	//addbyxqx201306 copyfrom cdboot
+	moduleDescriptor.StackBase = moduleConfig.stackbase;
+    moduleDescriptor.StackSize = moduleConfig.stacksize;
+
 
     if (!state->readString(moduleConfig.name, moduleDescriptor.Name)) {
         s2e()->getWarningsStream(state)
@@ -233,7 +237,8 @@ void RawMonitor::opLoadModule(S2EExecutionState *state)
     moduleDescriptor.Pid = moduleConfig.kernelMode ? 0 : state->getPid();
 
     s2e()->getDebugStream() << "RawMonitor loaded " << moduleDescriptor.Name << " " <<
-            hexval(moduleDescriptor.LoadBase) << " " << hexval(moduleDescriptor.Size) << "\n";
+            hexval(moduleDescriptor.LoadBase) << " " << hexval(moduleDescriptor.Size) << 
+			hexval(moduleDescriptor.StackBase) << "" << hexval(moduleDescriptor.StackSize) << "\n";
 
     onModuleLoad.emit(state, moduleDescriptor);
 }
