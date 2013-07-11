@@ -219,6 +219,9 @@ public:
         return yieldedState;
     }
 
+	//addbyxqx201307 for printstate
+	void printState(S2EExecutionState *state);
+
 protected:
     static void handlerTraceMemoryAccess(klee::Executor* executor,
                                     klee::ExecutionState* state,

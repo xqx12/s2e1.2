@@ -13,13 +13,16 @@
 *.a
 s2e-*
 cscope.*
+tags
 
 # some backup file with ~
 *~
 *.udb
+*.bak
 
 # build directory
 /build/
 /test/
 /s2e-*/
 /redhattest/
+/s2e/codes/

@@ -113,7 +113,7 @@ void MemoryManager::onFunctionCall(S2EExecutionState* state, FunctionMonitorStat
 		//打印完整路径约束
 		printConstraintExpr(state);
 	}
-	s2e()->getMessagesStream() << "分配的size表达式(如果是数，那么是16进制)：" << size << '\n';
+	//s2e()->getMessagesStream() << "分配的size表达式(如果是数，那么是16进制)：" << size << '\n';
 	
 	//检测分配的size
 	check___kmalloc_size(size,state);
@@ -208,8 +208,9 @@ bool MemoryManager::check___kmalloc_size(klee::ref<klee::Expr> size, S2EExecutio
 	//如果size是符号值
 	else
 	{
-		//求解出size=0的时候外界的输入是多少，也就是外界传入什么值的时候可以造成size会为=0
 		bool isTrue;
+		//求解出size=0的时候外界的输入是多少，也就是外界传入什么值的时候可以造成size会为=0
+		isTrue = false;
 		//klee::ref<klee::Expr> cond = klee::SleExpr::create(size, 
 		klee::ref<klee::Expr> cond = klee::EqExpr::create(size, 
 									 klee::ConstantExpr::create( 0, size.get()->getWidth()));
@@ -217,9 +218,13 @@ bool MemoryManager::check___kmalloc_size(klee::ref<klee::Expr> size, S2EExecutio
 			s2e()->getWarningsStream() << "failed to assert the condition" << '\n';
 			return false;
 		}
+
+		ConcreteInputs inputs;
+		ConcreteInputs::iterator it; 
+		
 		if (isTrue) {
-			ConcreteInputs inputs;
-			ConcreteInputs::iterator it; 
+			//ConcreteInputs inputs;
+			//ConcreteInputs::iterator it; 
 			
 			//把state的正确约束保存到constraints_before
 			klee::ConstraintManager constraints_before(state->constraints);
@@ -302,6 +307,27 @@ bool MemoryManager::check___kmalloc_size(klee::ref<klee::Expr> size, S2EExecutio
 			}
 		}
 		
+			if(m_terminateOnBugs)
+			{
+
+				s2e()->getExecutor()->getSymbolicSolution(*state, inputs);
+			
+				s2e()->getWarningsStream() << "======================================================" << '\n';
+				//s2e()->getWarningsStream() << "BUG:on this condition __kmalloc size will <= 0" << '\n';
+				s2e()->getWarningsStream() << "MaybeBUG:on this condition __kmalloc size could be impact" << '\n';
+				s2e()->getWarningsStream() << "Condition: " << '\n';
+			
+				for (it = inputs.begin(); it != inputs.end(); ++it) {
+					const VarValuePair &vp = *it;
+					s2e()->getWarningsStream() << vp.first << " : ";
+					for (unsigned i=0; i<vp.second.size(); ++i) {
+						s2e()->getWarningsStream() << hexval((unsigned char) vp.second[i]) << " ";
+					}
+					s2e()->getWarningsStream() << '\n';
+				}
+				//s2e()->getExecutor()->terminateStateEarly(*state, "Killed by MemoryManager: __kmalloc size is not valid[size<=0]\n");
+				s2e()->getExecutor()->terminateStateEarly(*state, "Killed by MemoryManager: __kmalloc size is not valid[size=0]\n");
+			}
 	}
 	return isok;
 }

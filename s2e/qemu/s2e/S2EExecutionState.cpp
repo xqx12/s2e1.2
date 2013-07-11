@@ -130,6 +130,30 @@ S2EExecutionState::~S2EExecutionState()
     delete m_timersState;
 }
 
+/*void  S2EExecutionState::printState()*/
+//{
+	
+	//m_s2e->getMessagesStream(state)
+		//<< "================state [" << state->getID() << "]:===================\n "
+		//<< static_cast<void *>(state) << "\n";
+
+	//TranslationBlock *tb = 
+   //[> const klee::InstructionInfo &ii = state->pc->info;<]
+	////if(ii.file != "")
+		////m_s2e->getMessagesStream(state)
+			////<< ii.file << ":" << ii.line << ";  \n ";
+	////else
+		////m_s2e->getMessagesStream(state)
+			////<< "[no debug info]\n";
+	
+
+	//m_s2e->getMessagesStream(state)
+		//<<"\t" << *(state->pc->inst) << "\n"; 
+
+////	llvm::errs() << state->pc->inst << "\n";
+	//m_s2e->getMessagesStream(state)
+		//<< "***************state [" << state->getID() << "]:end*******************\n "
+/*}*/
 void S2EExecutionState::enableSymbolicExecution()
 {
     if (m_symbexEnabled) {

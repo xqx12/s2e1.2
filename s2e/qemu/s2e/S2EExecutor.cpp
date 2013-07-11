@@ -1169,8 +1169,62 @@ void S2EExecutor::switchToConcrete(S2EExecutionState *state)
         m_s2e->getMessagesStream(state)
                 << "Switched to concrete execution at pc = "
                 << hexval(state->getPc()) << '\n';
+		printState(state);
     }
 }
+
+void S2EExecutor::printState(S2EExecutionState *state)
+{
+	
+	m_s2e->getMessagesStream(state)
+		<< "================state [" << state->getID() << "]:===================\n "
+		<< static_cast<void *>(state) << "\n";
+
+	m_s2e->getMessagesStream(state)
+		<< "|\tstates size is " <<  states.size()  << "\n"
+		<< "|\tPID is " << hexval( state->getPid() ) << "\n"
+		<< "|\tpc is " <<  hexval(state->getPc() ) << "\n"
+		<< "|\tm_runingConcrete is " <<  state->m_runningConcrete  << "\n"
+		<< "|\tm_startSymbexAtPC is " <<  hexval( state->m_startSymbexAtPC ) << "\n"
+		<< "|\tsymMask is " <<  hexval(state->getSymbolicRegistersMask() ) << "\n";
+	//TranslationBlock *tb = state->getTb();
+
+	//when tb==0 ,there is a SIGSEGV segmentation fault, why?:w
+	//
+	/*if(tb != NULL) {
+		m_s2e->getMessagesStream(state)
+			<< "|translationblock:\n" 
+			<< "|\tpc:"  << hexval(tb->pc) << "\n"
+			<< "|\tcs_base:"  << hexval(tb->cs_base) << "\n"
+			<< "|\tsize:"  << hexval(tb->size) << "\n"
+#ifdef CONFIG_S2E
+			<< "|S2ETranslationBlock:\n" 
+			<< "|\tllvm_function:"  << tb->s2e_tb->llvm_function << "\n"
+			<< "|\trefcount:"  << hexval(tb->s2e_tb->refCount) << "\n"
+#endif
+			<< "\n";
+	}*/
+
+   /* const klee::InstructionInfo &ii = state->pc->info;*/
+	//if(ii.file != "")
+		//m_s2e->getMessagesStream(state)
+			//<< ii.file << ":" << ii.line << ";  \n ";
+	//else
+		//m_s2e->getMessagesStream(state)
+			//<< "[no debug info]\n";
+	
+
+	m_s2e->getMessagesStream(state)
+		<<"\t" << *(state->pc->inst) << "\n"; 
+
+//	llvm::errs() << state->pc->inst << "\n";
+	m_s2e->getMessagesStream(state)
+		<< "***************state [" << state->getID() << "]:end*******************\n ";
+}
+
+
+
+
 
 void S2EExecutor::switchToSymbolic(S2EExecutionState *state)
 {
@@ -1191,6 +1245,7 @@ void S2EExecutor::switchToSymbolic(S2EExecutionState *state)
         m_s2e->getMessagesStream(state)
                 << "Switched to symbolic execution at pc = "
                 << hexval(state->getPc()) << '\n';
+		printState(state);
     }
 }
 

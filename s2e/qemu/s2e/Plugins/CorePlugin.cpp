@@ -74,6 +74,7 @@ static void s2e_timer_cb(void *opaque)
     g_s2e->getDebugStream() << "Firing timer event" << '\n';
 
     g_s2e->getExecutor()->updateStats(g_s2e_state);
+    g_s2e->getExecutor()->printState(g_s2e_state);
     c->onTimer.emit();
     qemu_mod_timer(c->getTimer(), qemu_get_clock_ms(rt_clock) + 1000);
 }

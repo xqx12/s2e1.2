@@ -1,15 +1,21 @@
 s2e = {
 	kleeArgs = {
 		"--use-dfs-search=true",
+--		"--print-mode-switch=true",
+		"--verbose-state-switching=true",
+		"--verbose-state-deletion=true",
+		"--verbose-fork-info=true",
+		"--print-forking-status=true",
+		--"--use-random-path=true"
 	}
 }
 
 plugins = {
 	"BaseInstructions",
-	"RawMonitor",
+	--"RawMonitor",
 	--"ModuleExecutionDetector",
-	"FunctionMonitor",
-	"MemoryManager",
+	--"FunctionMonitor",
+	--"MemoryManager",
 	"ExecutionTracer",
 	--"CallTracer",
 	"HostFiles",
@@ -34,7 +40,8 @@ pluginsConfig.MemoryManager = {
 }
 
 pluginsConfig.HostFiles = {
-	baseDirs = {"/home/xyj/research/guest_program/socket/sendmsg-cm2/"}
+	--baseDirs = {"/home/xqx/xqx/guest_program/socket/sendmsg-cm2/"}
+	baseDirs = {"/tmp/"}
 }
 
 
