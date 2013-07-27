@@ -295,6 +295,7 @@ public:
   /// which also manages manages propogation of implied values,
   /// validity checks, and seed patching.
   void addConstraint(ExecutionState &state, ref<Expr> condition);
+//  void printMemoryState(std::ostream &os, ExecutionState *state);
 
 //addfor MemoryManager Plugin byxqx 201307
 protected:

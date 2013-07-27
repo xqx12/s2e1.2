@@ -598,3 +598,29 @@ void ObjectState::print() {
     std::cerr << "\t\t[" << un->index << "] = " << un->value << "\n";
   }
 }
+
+
+
+void ObjectState::print(std::string &str) {
+  llvm::raw_string_ostream info(str);
+  info << "-- ObjectState --\n";
+  info << "\tMemoryObject Name: " << object->name << "\n";
+  info << "\tMemoryObject ID: " << object->id << "\n";
+  info << "\tRoot Object: " << updates.root << "\n";
+  info << "\tSize: " << size << "\n";
+
+  info << "\tBytes:\n";
+  for (unsigned i=0; i<size; i++) {
+    info << "\t\t["<<i<<"]"
+               << " concrete? " << isByteConcrete(i)
+               << " known-sym? " << isByteKnownSymbolic(i)
+               << " flushed? " << isByteFlushed(i) << " = ";
+    ref<Expr> e = read8(i);
+    info << e << "\n";
+  }
+
+  info << "\tUpdates:\n";
+  for (const UpdateNode *un=updates.head; un; un=un->next) {
+    info << "\t\t[" << un->index << "] = " << un->value << "\n";
+  }
+}

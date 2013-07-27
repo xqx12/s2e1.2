@@ -95,7 +95,8 @@ uint64_t helper_set_cc_op_eflags(void);
 #include <llvm/Support/DynamicLibrary.h>
 #include <llvm/Support/Process.h>
 #include <llvm/Support/CommandLine.h>
-
+//addbyxqx for support llvm::raw_ostream
+#include <llvm/Support/raw_ostream.h>
 #include <klee/PTree.h>
 #include <klee/Memory.h>
 #include <klee/Searcher.h>
@@ -1173,6 +1174,7 @@ void S2EExecutor::switchToConcrete(S2EExecutionState *state)
     }
 }
 
+
 void S2EExecutor::printState(S2EExecutionState *state)
 {
 	
@@ -1187,6 +1189,22 @@ void S2EExecutor::printState(S2EExecutionState *state)
 		<< "|\tm_runingConcrete is " <<  state->m_runningConcrete  << "\n"
 		<< "|\tm_startSymbexAtPC is " <<  hexval( state->m_startSymbexAtPC ) << "\n"
 		<< "|\tsymMask is " <<  hexval(state->getSymbolicRegistersMask() ) << "\n";
+
+	m_s2e->getMessagesStream(state)
+		<< "------------------m_cpuRegistersObject-------------------------\n";
+	std::string result;
+	state->m_cpuRegistersObject->print(result);
+	m_s2e->getMessagesStream(state)
+		<< result;
+	//printMemory(state, m_s2e->getMessagesStream(state));
+	m_s2e->getMessagesStream(state)
+		<< "------------------m_cpuRegistersObject-end-------------------------\n";
+	
+	m_s2e->getMessagesStream(state)
+		<< "------------------dumpX86State-------------------------\n";
+	state->dumpX86State(m_s2e->getMessagesStream(state));
+	m_s2e->getMessagesStream(state)
+		<< "------------------dumpX86State-end-------------------------\n";
 	//TranslationBlock *tb = state->getTb();
 
 	//when tb==0 ,there is a SIGSEGV segmentation fault, why?:w
@@ -1370,8 +1388,14 @@ void S2EExecutor::doStateSwitch(S2EExecutionState* oldState,
             << "Switching from state " << (oldState ? oldState->getID() : -1)
             << " to state " << (newState ? newState->getID() : -1) << '\n';
 
-    const MemoryObject* cpuMo = oldState ? oldState->m_cpuSystemState :
-                                            newState->m_cpuSystemState;
+	const MemoryObject* cpuMo = oldState ? oldState->m_cpuSystemState : 
+											newState->m_cpuSystemState;
+
+	//addbyxqx201307 
+	if(oldState) 
+		printState(oldState);
+	if(newState)
+		printState(newState);
 
     if(oldState) {
         if(oldState->m_runningConcrete)
@@ -1803,6 +1827,12 @@ uintptr_t S2EExecutor::executeTranslationBlockKlee(
 
     ++state->m_stats.m_statTranslationBlockSymbolic;
 
+	//addbyxqx for delete the IRQ symbolic execute
+   /* if(state->getPc() == 0xC010F780 )  //do_IRQ for linux 2.6*/
+	//{
+		//terminateStateEarly(*state, "do_IRQ be terminated");
+		////updateStates(state);
+	/*}*/
     /* Update state */
     //if (!copyInConcretes(*state)) {
     //    std::cerr << "external modified read-only object" << '\n';
@@ -1910,6 +1940,12 @@ uintptr_t S2EExecutor::executeTranslationBlockKlee(
 
     //copyOutConcretes(*state);
 
+	if(tb->pc == 0xc0265350) 
+    m_s2e->getMessagesStream(state)
+		<< "Klee Next TranslationBlock :" <<  hexval( cast<klee::ConstantExpr>(resExpr)->getZExtValue())
+		<< "\n";
+
+
     return cast<klee::ConstantExpr>(resExpr)->getZExtValue();
 }
 
@@ -1935,7 +1971,13 @@ uintptr_t S2EExecutor::executeTranslationBlockConcrete(S2EExecutionState *state,
     }
 
     memcpy(env->jmp_env, s2e_cpuExitJmpBuf, sizeof(env->jmp_env));
-    return ret;
+
+	if(tb->pc == 0xc0265350) 
+    m_s2e->getMessagesStream(state)
+		<< "Concrete Next TranslationBlock :" << hexval( ret )
+		<< "\n";
+    
+	return ret;
 }
 
 static inline void s2e_tb_reset_jump(TranslationBlock *tb, unsigned int n)
@@ -2066,6 +2108,9 @@ uintptr_t S2EExecutor::executeTranslationBlock(
         }
     }
 
+	//addbyxqx201307 for ignore the timer interrupt
+	
+
     if(executeKlee) {
         if(state->m_runningConcrete) {
             TimerStatIncrementer t(stats::concreteModeTime);
@@ -2074,7 +2119,22 @@ uintptr_t S2EExecutor::executeTranslationBlock(
 
         TimerStatIncrementer t(stats::symbolicModeTime);
 
-        return executeTranslationBlockKlee(state, tb);
+		//addbyxqx for print tb info
+		if(tb->pc == 0xc0265350) {
+		m_s2e->getMessagesStream(state)
+			<< "|Klee translationblock:\n" 
+			<< "|\tpc:"  << hexval(tb->pc) << "\n"
+			<< "|\tcs_base:"  << hexval(tb->cs_base) << "\n"
+			<< "|\tsize:"  << hexval(tb->size) << "\n"
+#ifdef CONFIG_S2E
+			<< "|S2ETranslationBlock:\n" 
+			<< "|\tllvm_function:"  << tb->s2e_tb->llvm_function << "\n"
+			<< "|\trefcount:"  << hexval(tb->s2e_tb->refCount) << "\n"
+#endif
+			<< "\n"; 
+		}
+
+		return executeTranslationBlockKlee(state, tb);
 
     } else {
         //g_s2e_exec_ret_addr = 0;
@@ -2084,6 +2144,21 @@ uintptr_t S2EExecutor::executeTranslationBlock(
         if (!((++doStatsIncrementCount) & 0xFFF)) {
             TimerStatIncrementer t(stats::concreteModeTime);
         }
+
+		//addbyxqx for print tb info
+		if(tb->pc == 0xc0265350) {
+		m_s2e->getMessagesStream(state)
+			<< "|Concrete translationblock:\n" 
+			<< "|\tpc:"  << hexval(tb->pc) << "\n"
+			<< "|\tcs_base:"  << hexval(tb->cs_base) << "\n"
+			<< "|\tsize:"  << hexval(tb->size) << "\n"
+#ifdef CONFIG_S2E
+			<< "|S2ETranslationBlock:\n" 
+			<< "|\tllvm_function:"  << tb->s2e_tb->llvm_function << "\n"
+			<< "|\trefcount:"  << hexval(tb->s2e_tb->refCount) << "\n"
+#endif
+			<< "\n"; 
+		}
 
         return executeTranslationBlockConcrete(state, tb);
     }
@@ -2333,6 +2408,9 @@ void S2EExecutor::terminateStateEarly(klee::ExecutionState &state, const llvm::T
 void S2EExecutor::terminateState(ExecutionState &s)
 {
     S2EExecutionState& state = static_cast<S2EExecutionState&>(s);
+	//addbyxqx201307 print the testCase
+    m_s2e->getCorePlugin()->onTestCaseGeneration.emit(&state, "terminateNormal");
+	
     m_s2e->getCorePlugin()->onStateKill.emit(&state);
 
     terminateStateAtFork(state);

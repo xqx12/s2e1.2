@@ -221,6 +221,11 @@ public:
 
 	//addbyxqx201307 for printstate
 	void printState(S2EExecutionState *state);
+/*	void printMemory(S2EExecutionState *state, std::ostream &os){
+		//klee::ObjectState::print(os);
+		state->m_cpuRegistersObject->print(os);
+	}
+*/
 
 protected:
     static void handlerTraceMemoryAccess(klee::Executor* executor,

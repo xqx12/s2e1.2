@@ -3746,6 +3746,11 @@ void Executor::addConstraint_pub(ExecutionState &state, ref<Expr> condition) {
    addConstraint(state , condition);
 }
 
+//addbyxqx for printMemory
+/*void printMemoryState(std::ostream &os, ExecutionState &state)*/
+//{
+	
+/*}*/
 
 
 

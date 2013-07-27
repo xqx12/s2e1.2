@@ -550,7 +550,7 @@ bool S2EExecutionState::getReturnAddress(uint64_t *retAddr)
 
 void S2EExecutionState::dumpStack(unsigned count)
 {
-    dumpStack(getSp());
+    dumpStack(count, getSp());
 }
 
 void S2EExecutionState::dumpStack(unsigned count, uint64_t sp)
@@ -571,7 +571,7 @@ void S2EExecutionState::dumpStack(unsigned count, uint64_t sp)
         os << '\n';
     }
 
-     g_s2e->getDebugStream();
+     g_s2e->getDebugStream() << os.str() << "\n";
 }
 
 

@@ -73,10 +73,11 @@ void MemoryManager::onTranslateInstructionStart(
 	
 	//by xyj---op:f3a[4,5]；对应的仅是rep movs
 	inst=inst&0xfeff;
-	if(inst == 0xa4f3)//2013-06-20修改--xuyongjian-仅匹配rep movs
+	//if(inst == 0xa4f3)//2013-06-20修改--xuyongjian-仅匹配rep movs
+	if(state->getPc() == 0xc0265350)
 	{
-		signal->connect(sigc::mem_fun(*this, 
-									  &MemoryManager::onMemcpyExecute));
+//		signal->connect(sigc::mem_fun(*this, 
+//									  &MemoryManager::onMemcpyExecute));
 	}
 }
 
@@ -92,7 +93,7 @@ void MemoryManager::onModuleLoad(S2EExecutionState* state,
 
 void MemoryManager::onFunctionCall(S2EExecutionState* state, FunctionMonitorState *fns)
 {
-	s2e()->getMessagesStream() << "---onFunctionCall" << '\n';
+	//s2e()->getMessagesStream() << "---onFunctionCall" << '\n';
 	
 	if(m_getParFromStack)
 	{
@@ -109,6 +110,7 @@ void MemoryManager::onFunctionCall(S2EExecutionState* state, FunctionMonitorStat
 	{
 		s2e()->getWarningsStream() << "=============================================" << '\n';
 		s2e()->getWarningsStream() << "KMALLOCSYMBOLIC: kmalloc size is symbolic" << '\n';
+		s2e()->getMessagesStream() << "分配的size表达式(hex)：" << size << '\n';
 		s2e()->getWarningsStream() << "=============================================" << '\n';
 		//打印完整路径约束
 		printConstraintExpr(state);
@@ -125,10 +127,10 @@ void MemoryManager::onFunctionCall(S2EExecutionState* state, FunctionMonitorStat
 
 void MemoryManager::onFunctionReturn(S2EExecutionState* state,bool test)
 {
-	s2e()->getMessagesStream() << "---onFunctionReturn" << '\n';
+	//s2e()->getMessagesStream() << "---onFunctionReturn" << '\n';
 	//get address
 	state->readCpuRegisterConcrete(CPU_OFFSET(regs[R_EAX]),&address , 4);
-	s2e()->getMessagesStream() << "分配的address （eax）:" << hexval(address) << '\n';
+	//s2e()->getMessagesStream() << "分配的address （eax）:" << hexval(address) << '\n';
 	//check?
 	//因为s2e本身的机制，在此处得到的分配长度size会是具体化过的，
 	//所以不能在此处检测分配的size，应当在调用的时候进行检测
@@ -138,13 +140,23 @@ void MemoryManager::onFunctionReturn(S2EExecutionState* state,bool test)
 }
 void MemoryManager::onMemcpyExecute(S2EExecutionState *state, uint64_t pc)
 {
+	uint64_t get_pc;
+	//uint32_t eip;
+	get_pc = state->getPc();
+//	state->readCpuRegisterConcrete(offsetof(CPUX86State, regs[R_EIP]), &eip, sizeof(eip));
+
+	if(get_pc>=0xc0265350 && get_pc < 0xc02653b7)
+	{
+		s2e()->getMessagesStream(state) << "pc is " << hexval(get_pc) << "\n" ;
+		state->dumpX86State(s2e()->getMessagesStream(state));
+	}
 	//get edi
-	state->readCpuRegisterConcrete(offsetof(CPUX86State, regs[R_EDI]), &edi, sizeof(edi));
+//	state->readCpuRegisterConcrete(offsetof(CPUX86State, regs[R_EDI]), &edi, sizeof(edi));
 	//get ecx
-	ecx = state->readCpuRegister(offsetof(CPUX86State, regs[R_ECX]), klee::Expr::Int32);
+//	ecx = state->readCpuRegister(offsetof(CPUX86State, regs[R_ECX]), klee::Expr::Int32);
 	
 	//check
-	check_rep(edi,ecx,state);
+//	check_rep(edi,ecx,state);
 }
 klee::ref<klee::Expr> MemoryManager::getArgValue(S2EExecutionState* state)
 {	
@@ -194,6 +206,7 @@ bool MemoryManager::check___kmalloc_size(klee::ref<klee::Expr> size, S2EExecutio
 		{
 			s2e()->getWarningsStream() << "============================================================" << '\n';
 			s2e()->getWarningsStream() << "BUG: __kmalloc [Size <= 0||Size >= 0xf0000] Size: " << value << '\n';
+			state->dumpStack(5);  //print the 5 stackframe addbyxqx
 			s2e()->getWarningsStream() << "============================================================" << '\n';
 			//打印完整路径约束
 			printConstraintExpr(state);
@@ -307,27 +320,31 @@ bool MemoryManager::check___kmalloc_size(klee::ref<klee::Expr> size, S2EExecutio
 			}
 		}
 		
-			if(m_terminateOnBugs)
-			{
+		if(m_terminateOnBugs)
+		{
 
-				s2e()->getExecutor()->getSymbolicSolution(*state, inputs);
-			
-				s2e()->getWarningsStream() << "======================================================" << '\n';
-				//s2e()->getWarningsStream() << "BUG:on this condition __kmalloc size will <= 0" << '\n';
-				s2e()->getWarningsStream() << "MaybeBUG:on this condition __kmalloc size could be impact" << '\n';
-				s2e()->getWarningsStream() << "Condition: " << '\n';
-			
-				for (it = inputs.begin(); it != inputs.end(); ++it) {
-					const VarValuePair &vp = *it;
-					s2e()->getWarningsStream() << vp.first << " : ";
-					for (unsigned i=0; i<vp.second.size(); ++i) {
-						s2e()->getWarningsStream() << hexval((unsigned char) vp.second[i]) << " ";
-					}
-					s2e()->getWarningsStream() << '\n';
+			s2e()->getExecutor()->getSymbolicSolution(*state, inputs);
+
+			s2e()->getWarningsStream() << "======================================================" << '\n';
+			//s2e()->getWarningsStream() << "BUG:on this condition __kmalloc size will <= 0" << '\n';
+			s2e()->getWarningsStream() << "MaybeBUG:on this condition __kmalloc size could be impact" << '\n';
+			s2e()->getWarningsStream() << "Condition: " << '\n';
+
+			for (it = inputs.begin(); it != inputs.end(); ++it) {
+				const VarValuePair &vp = *it;
+				s2e()->getWarningsStream() << vp.first << " : ";
+				for (unsigned i=0; i<vp.second.size(); ++i) {
+					s2e()->getWarningsStream() << hexval((unsigned char) vp.second[i]) << " ";
 				}
-				//s2e()->getExecutor()->terminateStateEarly(*state, "Killed by MemoryManager: __kmalloc size is not valid[size<=0]\n");
-				s2e()->getExecutor()->terminateStateEarly(*state, "Killed by MemoryManager: __kmalloc size is not valid[size=0]\n");
+				s2e()->getWarningsStream() << '\n';
 			}
+
+			s2e()->getWarningsStream() << "=================dumpStack=====================================" << '\n';
+			state->dumpStack(5);  //print the 5 stackframe addbyxqx
+			s2e()->getWarningsStream() << "======================dumpStack-end================================" << '\n';
+			//s2e()->getExecutor()->terminateStateEarly(*state, "Killed by MemoryManager: __kmalloc size is not valid[size<=0]\n");
+			s2e()->getExecutor()->terminateStateEarly(*state, "Killed by MemoryManager: __kmalloc size is not valid[size=0]\n");
+		}
 	}
 	return isok;
 }

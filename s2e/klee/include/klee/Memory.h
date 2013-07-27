@@ -290,7 +290,11 @@ private:
 
   void setKnownSymbolic(unsigned offset, Expr *value);
 
+  //addbyxqx201307  for print object 
+public:
   void print();
+  //void print(std::ostream &os);
+  void print(std::string &str) ;
 };
   
 } // End klee namespace

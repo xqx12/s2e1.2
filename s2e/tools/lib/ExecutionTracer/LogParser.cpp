@@ -51,7 +51,7 @@
 
 #endif
 
-//#define DEBUG_LP
+#define DEBUG_LP
 
 using namespace s2e::plugins;
 
